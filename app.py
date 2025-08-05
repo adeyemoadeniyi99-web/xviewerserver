@@ -8,9 +8,18 @@ app = Flask(__name__)
 # Suppress yt-dlp warnings if desired, though seeing them can be helpful for debugging
 logging.getLogger('yt_dlp').setLevel(logging.ERROR)
 
+# ADDED: A new route to confirm the server is running correctly.
+@app.route('/', methods=['GET'])
+def hello_world():
+    return "Backend server is running!"
+
 @app.route('/get-youtube-url', methods=['POST'])
 def get_youtube_url():
     data = request.get_json()
+
+    if data is None:
+        return jsonify({"error": "No JSON data provided"}), 400
+        
     video_url = data.get('url')
 
     if not video_url:
