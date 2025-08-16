@@ -36,7 +36,7 @@ def download():
     print(f"Proxying request for URL: {video_url}")
 
     # Replit worker URL (replace with your actual Replit worker URL)
-    WORKER_URL = "https://a660a3d7-037d-4ea6-91a9-272457186f2b-00-222micxxy3mrb.worf.replit.dev/"
+    WORKER_URL = "https://a660a3d7-037d-4ea6-91a9-272457186f2b-00-222micxxy3mrb.worf.replit.dev/download"
 
     try:
         response = requests.get(WORKER_URL, params={"url": video_url}, timeout=20)
