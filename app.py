@@ -1,29 +1,7 @@
-# app.py - Backend server for extracting video info via yt-dlp
-from flask import Flask, request, jsonify
-from yt_dlp import YoutubeDL
-from yt_dlp.utils import DownloadError
-from flask_cors import CORS
-import logging
-import os
-
-app = Flask(__name__)
-CORS(app)
-
-# Suppress verbose yt-dlp logs
-logging.getLogger('yt_dlp').setLevel(logging.ERROR)
-
-@app.route('/', methods=['GET'])
-def hello_world():
-    """
-    Root route to confirm server is alive.
-    """
-    return jsonify({"message": "Backend server is running!"})
-
-
 @app.route('/download', methods=['POST'])
 def download():
     """
-    Extract video info + direct download link from YouTube using yt-dlp.
+    Extract video info + available direct download links from YouTube using yt-dlp.
     """
     data = request.get_json()
     if not data:
@@ -57,10 +35,23 @@ def download():
         with YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(video_url, download=False)
 
+            # Extract available formats (video/audio)
+            formats = []
+            for f in info_dict.get('formats', []):
+                # Only include formats with a playable URL
+                if f.get('url'):
+                    formats.append({
+                        "format_id": f.get("format_id"),
+                        "ext": f.get("ext"),
+                        "resolution": f.get("resolution") or f"{f.get('height', '?')}p",
+                        "filesize": f.get("filesize"),
+                        "url": f.get("url"),
+                    })
+
             return jsonify({
-                "direct_url": info_dict.get('url'),
                 "title": info_dict.get('title', 'Unknown'),
-                "thumbnail": info_dict.get('thumbnail')
+                "thumbnail": info_dict.get('thumbnail'),
+                "formats": formats  # <-- returns multiple download URLs
             })
 
     except DownloadError as e:
@@ -71,8 +62,3 @@ def download():
     except Exception as e:
         app.logger.error(f"Error processing {video_url}: {e}", exc_info=True)
         return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
-
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
